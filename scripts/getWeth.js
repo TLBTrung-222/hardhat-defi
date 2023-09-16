@@ -8,7 +8,7 @@ async function getWeth() {
     // we will interact with WETH contract on mainnet now
     // To get contract's instance, we need: abi + address
     const iWeth = await ethers.getContractAt(
-        "IWeth", // this is interface, can use instead of abi
+        "IWeth", // this is interface get from artifact folder, can use instead of abi
         "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // this is WETH contract address on ETH mainnet
         deployer
     );
@@ -17,7 +17,9 @@ async function getWeth() {
     });
     await txResponse.wait(1);
     const wethBalance = await iWeth.balanceOf(deployer);
-    console.log(`Got ${ethers.utils.formatEther(wethBalance)} WETH`);
+    console.log(
+        `Paid ETH to get ${ethers.utils.formatEther(wethBalance)} WETH`
+    );
 }
 
-module.exports = { getWeth };
+module.exports = { getWeth, AMOUNT };
