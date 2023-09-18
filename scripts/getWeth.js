@@ -1,6 +1,6 @@
 const { ethers, getNamedAccounts } = require("hardhat");
 
-const AMOUNT = ethers.utils.parseEther("0.0001");
+const AMOUNT = ethers.utils.parseEther("0.001");
 
 async function getWeth() {
     const deployer = (await getNamedAccounts()).deployer;
