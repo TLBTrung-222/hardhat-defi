@@ -2,7 +2,7 @@ const { ethers, getNamedAccounts } = require("hardhat");
 const { getWeth, AMOUNT } = require("./getWeth");
 
 async function main() {
-    // Need to get some WETH
+    // Need to pay ETH to get some WETH
     await getWeth();
 
     const { deployer } = await getNamedAccounts(); // the deployer still the first account as when we run hh node
@@ -16,7 +16,7 @@ async function main() {
 
     //* Deposit WETH to Aave
     // but first, need to approve the lending pool contract (spender) so it can pull out money from our wallet
-    await approveWeth(wethTokenAddress, lendingPool.address, AMOUNT, deployer);
+    await approveErc20(wethTokenAddress, lendingPool.address, AMOUNT, deployer);
     console.log("Depositing...");
     await lendingPool.deposit(wethTokenAddress, AMOUNT, deployer, 0);
     console.log(
@@ -54,9 +54,20 @@ async function main() {
     );
 
     const daiTokenAddress = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+
     await borrowDai(
         daiTokenAddress,
         lendingPool,
+        availableBorrowsDAIinWei,
+        deployer
+    );
+
+    await getBorrowUserData(lendingPool, deployer);
+    console.log("------------------------------------------------------");
+
+    await repayDai(
+        lendingPool,
+        daiTokenAddress,
         availableBorrowsDAIinWei,
         deployer
     );
@@ -84,16 +95,16 @@ async function getLendingPoolContract(account) {
     return ILendingPool;
 }
 
-async function approveWeth(wethAddress, spender, amount, account) {
+async function approveErc20(erc20Address, spender, amountToSpend, account) {
     // create a Weth contract instance (abi + address + account)
-    const wethContract = await ethers.getContractAt(
-        "IWeth",
-        wethAddress,
+    const erc20Contract = await ethers.getContractAt(
+        "IERC20",
+        erc20Address,
         account
     );
 
     // call approve function from Weth instance (lending pool address + value)
-    const txResponse = await wethContract.approve(spender, amount);
+    const txResponse = await erc20Contract.approve(spender, amountToSpend);
     await txResponse.wait(1);
 }
 
@@ -147,6 +158,28 @@ async function borrowDai(
         account
     );
     await borrowTx.wait(1);
+    console.log("Borrowed successfully");
+}
+
+async function repayDai(lendingPool, daiTokenAddress, repayAmount, account) {
+    await approveErc20(
+        daiTokenAddress,
+        lendingPool.address,
+        repayAmount,
+        account
+    );
+
+    // repay syntax:
+    // function repay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf)
+    console.log(`Repaying ${repayAmount} DAI to lending pool`);
+    const repayTx = await lendingPool.repay(
+        daiTokenAddress,
+        repayAmount,
+        2,
+        account
+    );
+    await repayTx.wait(1);
+    console.log("Repaid succesfully!!");
 }
 
 main()
